@@ -1,0 +1,63 @@
+<script>
+    function get_text(data) {
+        return data.text()
+    }
+
+    function find_closing(text, start) {
+        let c = 1
+        for (let i = start; i < text.length; i++) {
+            if (text[i] === '{') {
+                c++
+            }
+            if (text[i] === '}') {
+                c--
+            }
+            if (c === 0) {
+                return i
+            }
+        }
+        return -1
+    }
+
+    function find_functions(text) {
+        let functions = new Map()
+        let match
+        while ((match = signatureRegex.exec(text)) !== null) {
+            end = find_closing(text, signatureRegex.lastIndex)
+            functions.set(match[1], match[0] + text.substring(signatureRegex.lastIndex, end + 1))
+        }
+        return functions
+    }
+
+    function render(row, functions, root) {
+        const pre = document.createElement("pre")
+        pre.innerHTML = row
+
+        functions.forEach((body, name) => {
+            if(row.includes(name)) {
+                pre.onclick = (e) => {
+                    e.stopPropagation()
+                    body
+                        .split("\n")
+                        .forEach(row => render(row, functions, pre))
+                }
+            }
+        })
+
+        root.appendChild(pre)
+    }
+
+    function parse_code(text) {
+        const functions = find_functions(text)
+        text
+            .split("\n")
+            .forEach(row => {
+                render(row, functions, document.body)
+            });
+    }
+
+    const signatureRegex = /function (\w+)\([^\)]*\) {/g
+    fetch("./")
+        .then(get_text)
+        .then(parse_code)
+</script>
